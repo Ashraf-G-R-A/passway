@@ -4,9 +4,8 @@ import { prisma } from "../libs/prisma";
 import { Role } from "@prisma/client";
 
 const defaultImageUrl = "https://res.cloudinary.com/dmx1xwl2j/image/upload/v1764041999/send_cmq9y8.jpg";
-const defaultSoundAndroid = "sound"; // ملف في android/app/src/main/res/raw/ring.mp3
-const defaultSoundIOS = "sound.caf"; // ملف في iOS project
-
+const defaultSoundAndroid = "noty";  
+const defaultSoundIOS = "noty.caf";  
 export async function saveFcmToken(userId: string, token: string, device?: string) {
   return await prisma.fcmToken.upsert({
     where: { token },
@@ -46,10 +45,11 @@ export async function sendNotificationToUser(
     notification: { title, body },
     data,
     tokens,
-    android: {
+ android: {
       notification: {
         sound: defaultSoundAndroid,
         imageUrl,
+        channelId: "channel_id", 
       },
     },
     apns: {
@@ -65,7 +65,10 @@ export async function sendNotificationToUser(
 
   const response = await admin.messaging().sendEachForMulticast(message);
   console.log(`✅ Notifications sent to user ${userId}: ${response.successCount}`);
+
+  return formatNotificationResponse(tokens, title, body, data, imageUrl, response);
 }
+
 
 export async function sendNotificationToRole(
   role: Role,
@@ -83,7 +86,52 @@ export async function sendNotificationToRole(
     apns: { fcm_options: { image: imageUrl } },
   };
 
-  const response = await admin.messaging().sendEachForMulticast(message);
-  console.log(`✅ Notifications sent to role ${role}: ${response.successCount}`);
+const response = await admin.messaging().sendEachForMulticast(message);
+
+console.log(`✅ Notifications sent to role ${role}: ${response.successCount}`);
 }
 
+
+
+
+
+
+function formatNotificationResponse(
+  tokens: string[],
+  title: string,
+  body: string,
+  data: any,
+  imageUrl: string,
+  response: any
+) {
+  return {
+    success: response.successCount > 0,
+    message: `Sent to ${response.successCount}/${tokens.length} devices`,
+    tokens,
+
+    payload: {
+      notification: { title, body },
+      data,
+
+      android: {
+        notification: {
+          sound: defaultSoundAndroid,
+          channel_id: "channel_id", 
+          imageUrl,
+        }
+      },
+
+      ios: {
+        aps: {
+          sound: defaultSoundIOS,
+          "mutable-content": 1,
+        },
+        fcm_options: {
+          image: imageUrl,
+        }
+      }
+    },
+
+    firebaseResult: response,
+  };
+}
