@@ -63,11 +63,6 @@ export async function sendNotificationToUser(
   };
 
 
-
-  
-
-
-
   const response = await admin.messaging().sendEachForMulticast(message);
   console.log(`✅ Notifications sent to user ${userId}: ${response.successCount}`);
 
