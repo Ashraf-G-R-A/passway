@@ -254,24 +254,26 @@ export async function driverStartTrip(req: FullRequest, res: Response) {
       return res.status(400).json({ error: t(lang, "trip.cannot_start_now") });
 
   
-    const now = new Date();
-    const tripTime = new Date(trip.startTime);
-    const oneHourBefore = new Date(tripTime.getTime() - (60 * 60 * 1000));
-    const fourHoursAfter = new Date(tripTime.getTime() + (4 * 60 * 60 * 1000)); 
+const now = new Date();
+const tripTime = new Date(trip.startTime);
 
-    if (now < oneHourBefore) {
-      return res.status(400).json({ 
-        error: t(lang, "trip.cannot_start_early"),
-        details: t(lang, "trip.can_start_from", oneHourBefore.toLocaleString(lang))
-      });
-    }
+const oneHourBefore = new Date(tripTime.getTime() - (60 * 60 * 1000));   
+const halfHourAfter = new Date(tripTime.getTime() + (30 * 60 * 1000));  
 
-    if (now > fourHoursAfter) {
-      return res.status(400).json({ 
-        error: t(lang, "trip.cannot_start_late"),
-        details: t(lang, "trip.expired_at", fourHoursAfter.toLocaleString(lang))
-      });
-    }
+
+if (now < oneHourBefore) {
+  return res.status(400).json({
+    error: t(lang, "trip.cannot_start_early"),
+    details: t(lang, "trip.can_start_from", oneHourBefore.toLocaleString(lang)),
+  });
+}
+
+if (now > halfHourAfter) {
+  return res.status(400).json({
+    error: t(lang, "trip.cannot_start_late"),
+    details: t(lang, "trip.expired_at", halfHourAfter.toLocaleString(lang)),
+  });
+}
 
     const updatedTrip = await prisma.trip.update({
       where: { id: tripId },
